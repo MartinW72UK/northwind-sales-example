@@ -1,18 +1,12 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from sqlalchemy import create_engine
 import datetime
 
-# Database Connection
-server = 'localhost\\REPORTING'  # Your SQL Server instance
-database = 'AdventureWorks2022'  # Your database name
-username = 'Python'
-password = 'python'
-
-# Create SQLAlchemy engine
-connection_string = f"mssql+pyodbc://{username}:{password}@{server}/{database}?driver=ODBC+Driver+17+for+SQL+Server"
-engine = create_engine(connection_string)
+# Load the data from a CSV file
+@st.cache_data
+def load_data():
+    return pd.read_csv('sales_data.csv')
 
 # Title
 st.title("Enhanced Sales Dashboard")
@@ -26,45 +20,21 @@ to_date = st.sidebar.date_input("To Date", datetime.date(2014, 12, 31))
 if from_date > to_date:
     st.error("Error: From Date must be earlier than To Date.")
 
-# Query the Database with Date Filter
-@st.cache_data
-def load_data(from_date, to_date):
-    query = """
-    SELECT 
-        CAST(SUM(sod.LineTotal) AS DECIMAL(20, 2)) AS LineTotal,
-        p.Name AS ProductName,
-        ps.Name AS SubcategoryName,
-        pc.Name AS CategoryName,
-        CAST(soh.OrderDate AS DATE) AS OrderDate
-    FROM 
-        Sales.SalesOrderHeader soh
-    JOIN 
-        Sales.SalesOrderDetail sod ON soh.SalesOrderID = sod.SalesOrderID
-    JOIN 
-        Production.Product p ON sod.ProductID = p.ProductID
-    LEFT JOIN 
-        Production.ProductSubcategory ps ON p.ProductSubcategoryID = ps.ProductSubcategoryID
-    LEFT JOIN 
-        Production.ProductCategory pc ON ps.ProductCategoryID = pc.ProductCategoryID
-    WHERE 
-        soh.OrderDate BETWEEN ? AND ?
-    GROUP BY 
-        p.Name, ps.Name, pc.Name, CAST(soh.OrderDate AS DATE)
-    ORDER BY 
-        LineTotal DESC;
-    """
-    from_date_str = from_date.strftime('%Y-%m-%d')
-    to_date_str = to_date.strftime('%Y-%m-%d')
-    return pd.read_sql(query, con=engine, params=(from_date_str, to_date_str))
+# Load and Filter Data
+data = load_data()
 
-# Load Data
-df = load_data(from_date, to_date)
+# Ensure date column is in datetime format
+data['OrderDate'] = pd.to_datetime(data['OrderDate'])
+
+# Filter data by date range
+filtered_data = data[(data['OrderDate'] >= pd.to_datetime(from_date)) & 
+                     (data['OrderDate'] <= pd.to_datetime(to_date))]
 
 # Sidebar: Subcategory Filter
 selected_subcategories = st.sidebar.multiselect(
     "Select Subcategories",
-    options=df['SubcategoryName'].unique(),
-    default=df['SubcategoryName'].unique()
+    options=filtered_data['SubcategoryName'].unique(),  
+    default=filtered_data['SubcategoryName'].unique()
 )
 
 # Sidebar: Chart Type Selector
@@ -73,15 +43,15 @@ chart_type = st.sidebar.selectbox(
     options=["Bar Chart", "Line Chart"]
 )
 
-# Filter Data
-filtered_df = df[df['SubcategoryName'].isin(selected_subcategories)]
+# Filter data by selected subcategories
+filtered_data = filtered_data[filtered_data['SubcategoryName'].isin(selected_subcategories)]
 
-# Display Data
+# Display Filtered Data
 st.subheader("Filtered Sales Data")
-st.write(filtered_df)
+st.write(filtered_data)
 
 # Aggregate Data by Category to reduce x-axis labels
-df_grouped = filtered_df.groupby("CategoryName").agg({"LineTotal": "sum"}).reset_index()
+df_grouped = filtered_data.groupby("CategoryName").agg({"LineTotal": "sum"}).reset_index()
 
 # Render Chart
 if not df_grouped.empty:
@@ -101,4 +71,3 @@ if not df_grouped.empty:
     st.pyplot(fig)
 else:
     st.write("No data to display. Please adjust your filters.")
-
