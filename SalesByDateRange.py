@@ -21,31 +21,21 @@ data['OrderDate'] = pd.to_datetime(data['OrderDate'], errors='coerce')
 min_date = data['OrderDate'].min().date()
 max_date = data['OrderDate'].max().date()
 
-# Store defaults in session state if not already set
+# Initialize session state variables if they don't exist
 if "from_date" not in st.session_state:
     st.session_state.from_date = min_date
 if "to_date" not in st.session_state:
     st.session_state.to_date = max_date
 
 # Sidebar: Date Inputs
-from_date = st.sidebar.date_input(
-    "From Date", 
-    value=st.session_state.from_date if "from_date" in st.session_state else min_date,
-    key="from_date"
-)
-
-to_date = st.sidebar.date_input(
-    "To Date", 
-    value=st.session_state.to_date if "to_date" in st.session_state else max_date,
-    key="to_date"
-)
-
+from_date = st.sidebar.date_input("From Date", st.session_state.from_date, key="from_date")
+to_date = st.sidebar.date_input("To Date", st.session_state.to_date, key="to_date")
 
 # Reset Filters Button
 if st.sidebar.button("Reset Filters"):
     st.session_state.from_date = min_date
     st.session_state.to_date = max_date
-    st.rerun()  # Ensures Streamlit refreshes with reset values
+    st.rerun()
 
 # Ensure from_date <= to_date
 if from_date > to_date:
