@@ -27,9 +27,19 @@ if "from_date" not in st.session_state:
 if "to_date" not in st.session_state:
     st.session_state.to_date = max_date
 
-# Sidebar: Date Inputs (Single Instance Now)
-from_date = st.sidebar.date_input("From Date", st.session_state.from_date, key="from_date")
-to_date = st.sidebar.date_input("To Date", st.session_state.to_date, key="to_date")
+# Sidebar: Date Inputs
+from_date = st.sidebar.date_input(
+    "From Date", 
+    value=st.session_state.from_date if "from_date" in st.session_state else min_date,
+    key="from_date"
+)
+
+to_date = st.sidebar.date_input(
+    "To Date", 
+    value=st.session_state.to_date if "to_date" in st.session_state else max_date,
+    key="to_date"
+)
+
 
 # Reset Filters Button
 if st.sidebar.button("Reset Filters"):
