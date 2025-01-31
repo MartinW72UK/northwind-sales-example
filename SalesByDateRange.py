@@ -22,7 +22,18 @@ min_date = data['OrderDate'].min().date()
 max_date = data['OrderDate'].max().date()
 
 # Sidebar: Date Inputs
-st.sidebar.header("Filter by Date")
+from_date = st.sidebar.date_input(
+    "From Date", 
+    value=st.session_state.get("from_date", min_date),
+    key="from_date"
+)
+
+to_date = st.sidebar.date_input(
+    "To Date", 
+    value=st.session_state.get("to_date", max_date),
+    key="to_date"
+)
+
 
 # Store defaults in session state
 if "from_date" not in st.session_state:
@@ -38,7 +49,8 @@ to_date = st.sidebar.date_input("To Date", st.session_state.to_date)
 if st.sidebar.button("Reset Filters"):
     st.session_state.from_date = min_date
     st.session_state.to_date = max_date
-    st.rerun()  
+    st.session_state.reset_trigger = True  # Add a trigger flag
+    st.rerun()
 
 
 # Ensure from_date <= to_date
