@@ -38,7 +38,8 @@ to_date = st.sidebar.date_input("To Date", st.session_state.to_date)
 if st.sidebar.button("Reset Filters"):
     st.session_state.from_date = min_date
     st.session_state.to_date = max_date
-    st.experimental_rerun()
+    st.rerun()  
+
 
 # Ensure from_date <= to_date
 if from_date > to_date:
